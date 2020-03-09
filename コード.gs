@@ -5,6 +5,8 @@ function updateSheet() {
   var START_COLUMN = 1;
   // 設定シートのメール検索日のセル
   var SETTINGS_SHEET_SEARCH_MAIL_DATE = 'B2';
+  // グラフ画像キャッシュのセル
+  var SETTINGS_SHEET_GRAPH_CACHE = 'B3:B4';
 
   var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
   // ex: [{"priceS4": 1800, "priceS5": 1500},
@@ -101,6 +103,7 @@ function updateSheet() {
   });
 
   // シートに書き出し
+  var latestSheet = null;
   datas.sort(function (a, b) {
     return a.date.diff(b.date);
   }).forEach(function (data) {
@@ -130,10 +133,18 @@ function updateSheet() {
     sheet.getRange(row, column++).setValue(data.priceAvg);
     sheet.getRange(row, column++).setValue(data.shipmentQuantity);
     sheet.getRange(row, column++).setValue(data.mailDate.format("YYYY/MM/DD HH:mm:ss"));
+    latestSheet = sheet;
   });
 
-  // 全てが正常終了したら、設定シートを更新する
   if (latestMailDate) {
+    // グラフのキャッシュを作成
+    var graphCacheRange = settingsSheet.getRange(SETTINGS_SHEET_GRAPH_CACHE);
+    var base64image = Utilities.base64Encode(latestSheet.getCharts()[0].getBlob().getBytes());
+    graphCacheRange.setValues([
+      [base64image.substring(0, 50000)],
+      [base64image.substring(50000, 100000)]
+    ]);
+    // 全てが正常終了したら、設定シートを更新する
     searchMailDateRange.setValue(latestMailDate.format());
   }
 }
