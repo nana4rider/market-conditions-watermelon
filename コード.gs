@@ -5,6 +5,9 @@ function updateSheet() {
   var START_COLUMN = 1;
   // 設定シートのメール検索日のセル
   var SETTINGS_SHEET_SEARCH_MAIL_DATE = 'B2';
+  // Webhook Url
+  var WEBHOOK_URL = 'https://discordapp.com/api/webhooks/700638580405567519/PiaGt_OXdSCDbM37LHFhZU9ACm3tfDwMBT-7TDNJWgcpQXv1HPl1eIxkv90h1iO0-HsF';
+  var WEBHOOK_AVATAR = 'https://logomarket.jp/labo/wp-content/uploads/2015/08/8ba288903677b41260f4cc9d8aa73ae7.gif';
 
   var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
   // ex: [{"priceS4": 1800, "priceS5": 1500},
@@ -34,7 +37,8 @@ function updateSheet() {
   messages.sort(function (a, b) {
     return a.getDate().getTime() - b.getDate().getTime();
   }).forEach(function (message) {
-    var bodies = message.getPlainBody().split("\r\n");
+    var plainBody = message.getPlainBody();
+    var bodies = plainBody.split("\r\n");
     var bodyLength = bodies.length;
     var bodyIndex = -1;
     var getNextBody = function () {
@@ -48,6 +52,20 @@ function updateSheet() {
     // Mail
     var mailDate = Moment.moment(message.getDate());
     if (searchMailDate && !mailDate.isAfter(searchMailDate)) return;
+    latestMailDate = mailDate;
+
+    try {
+      UrlFetchApp.fetch(WEBHOOK_URL, {
+        method: 'post',
+        payload: {
+          username: message.getSubject(),
+          avatar_url: WEBHOOK_AVATAR,
+          content: zen2han(plainBody)
+        }
+      });
+    } catch (e) {
+      console.error(e); 
+    }
 
     var mailMonth = mailDate.month() + 1;
     // mm月dd日出荷
@@ -97,7 +115,6 @@ function updateSheet() {
     data.shipmentQuantity = Number(zen2han(lineSq.replace('箱', '')));
 
     datas.push(data);
-    latestMailDate = mailDate;
   });
 
   // シートに書き出し
